@@ -1,0 +1,18 @@
+[package]
+name = "hm-hub"
+version = "0.1.0"
+edition = "2021"
+description = "CLI tool for the HM Lab Z-NEO 8K USB Hub LCD screen"
+license = "AGPL-3.0-or-later"
+repository = "https://heliopolis.live/creations/hm-hub"
+keywords = ["usb", "hub", "lcd", "hm-lab"]
+categories = ["command-line-utilities", "hardware-support"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serialport = "4"
+crc32fast = "1"
+image = "0.25"
+gif = "0.13"
+anyhow = "1"
+indicatif = "0.17"
