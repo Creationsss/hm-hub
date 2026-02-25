@@ -1,6 +1,6 @@
 [package]
 name = "hm-hub"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "CLI tool for the HM Lab Z-NEO 8K USB Hub LCD screen"
 license = "AGPL-3.0-or-later"
