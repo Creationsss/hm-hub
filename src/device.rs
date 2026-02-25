@@ -51,9 +51,14 @@ impl Device {
 	fn handshake(&mut self) -> Result<()> {
 		let pkt = build_handshake()?;
 		pkt.send(&mut *self.port)?;
-		let resp = recv_packet(&mut *self.port, NORMAL_TIMEOUT)?;
-		self.info = parse_handshake(&resp)?;
-		Ok(())
+		for _ in 0..10 {
+			let resp = recv_packet(&mut *self.port, NORMAL_TIMEOUT)?;
+			if resp.cmd_id() == CMD_HANDSHAKE {
+				self.info = parse_handshake(&resp)?;
+				return Ok(());
+			}
+		}
+		bail!("no handshake response after 10 attempts")
 	}
 
 	pub fn read_config(&mut self) -> Result<DeviceConfig> {
@@ -113,69 +118,57 @@ impl Device {
 		let pkt = build_flash_start(total_size)?;
 		pkt.send(&mut *self.port)?;
 
-		let spinner = ProgressBar::new_spinner();
-		spinner.set_style(ProgressStyle::default_spinner().template("{spinner:.cyan} {msg}")?);
-		spinner.set_message("Waiting for flash erase...");
-
-		loop {
-			let resp = recv_packet(&mut *self.port, ERASE_TIMEOUT)?;
-			if resp.cmd_id() == CMD_FLASH {
-				let payload = resp.payload();
-				if payload[0] == 1 {
-					match payload[1] {
-						2 => spinner.set_message("Erasing flash..."),
-						4 => {
-							spinner.finish_with_message("Erase complete.");
-							break;
-						}
-						_ => {}
-					}
-				}
-			} else if resp.cmd_id() == CMD_LOG {
-				if let Ok(msg) = parse_log(&resp) {
-					spinner.println(format!("[device log] {msg}"));
-				}
-			}
-		}
-
 		let pb = ProgressBar::new(flash_data.len() as u64);
 		pb.set_style(
 			ProgressStyle::default_bar()
 				.template("{spinner:.cyan} [{bar:40.cyan/dim}] {bytes}/{total_bytes} ({eta})")?
 				.progress_chars("=> "),
 		);
+		pb.set_position(0);
 
 		loop {
-			let resp = recv_packet(&mut *self.port, NORMAL_TIMEOUT)?;
-			if resp.cmd_id() == CMD_FLASH {
-				let payload = resp.payload();
-				match payload[0] {
-					2 => {
-						let offset =
-							u32::from_le_bytes([payload[1], payload[2], payload[3], payload[4]]);
-						let length = u16::from_le_bytes([payload[5], payload[6]]);
-
-						let start = offset as usize;
-						let end = (start + length as usize).min(flash_data.len());
-						let chunk = &flash_data[start..end];
-
-						let resp_pkt = build_flash_data_response(offset, length, chunk)?;
-						resp_pkt.send(&mut *self.port)?;
-
-						pb.set_position(
-							(offset as u64 + length as u64).min(flash_data.len() as u64),
-						);
+			let resp = recv_packet(&mut *self.port, ERASE_TIMEOUT)?;
+			if resp.cmd_id() != CMD_FLASH {
+				if resp.cmd_id() == CMD_LOG {
+					if let Ok(msg) = parse_log(&resp) {
+						pb.println(format!("[device log] {msg}"));
 					}
-					4 => {
+				}
+				continue;
+			}
+
+			let payload = resp.payload();
+			match payload[0] {
+				1 => {
+					if payload[1] == 2 {
+						pb.set_message("Erasing flash...");
+					}
+				}
+				2 => {
+					let offset =
+						u32::from_le_bytes([payload[1], payload[2], payload[3], payload[4]]);
+					let length = u16::from_le_bytes([payload[5], payload[6]]);
+
+					let start = offset as usize;
+					let end = (start + length as usize).min(flash_data.len());
+					let chunk = &flash_data[start..end];
+
+					let resp_pkt = build_flash_data_response(offset, length, chunk)?;
+					resp_pkt.send(&mut *self.port)?;
+
+					let pos = (offset as usize + length as usize).min(flash_data.len());
+					pb.set_position(pos as u64);
+
+					if pos >= flash_data.len() {
 						pb.finish_with_message("Upload complete!");
 						return Ok(());
 					}
-					_ => {}
 				}
-			} else if resp.cmd_id() == CMD_LOG {
-				if let Ok(msg) = parse_log(&resp) {
-					pb.println(format!("[device log] {msg}"));
+				4 => {
+					pb.finish_with_message("Upload complete!");
+					return Ok(());
 				}
+				_ => {}
 			}
 		}
 	}
