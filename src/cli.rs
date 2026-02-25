@@ -25,12 +25,8 @@ pub enum Commands {
 		#[arg(required = true)]
 		images: Vec<PathBuf>,
 
-		#[arg(
-			long,
-			default_value_t = true,
-			help = "Crop images to fill display (otherwise letterbox)"
-		)]
-		crop: bool,
+		#[arg(long, help = "Letterbox instead of cropping to fill")]
+		no_crop: bool,
 
 		#[arg(long, help = "Save a preview PNG instead of uploading")]
 		preview: Option<PathBuf>,
@@ -40,8 +36,8 @@ pub enum Commands {
 		#[arg(help = "Directory containing images")]
 		dir: PathBuf,
 
-		#[arg(long, default_value_t = true, help = "Crop images to fill display")]
-		crop: bool,
+		#[arg(long, help = "Letterbox instead of cropping to fill")]
+		no_crop: bool,
 	},
 	#[command(about = "Show USB power/current stats")]
 	Power {
@@ -84,8 +80,8 @@ pub enum Commands {
 		)]
 		interval: u64,
 
-		#[arg(long, default_value_t = true, help = "Crop images to fill display")]
-		crop: bool,
+		#[arg(long, help = "Letterbox instead of cropping to fill")]
+		no_crop: bool,
 	},
 }
 

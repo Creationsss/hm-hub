@@ -35,10 +35,10 @@ fn main() -> Result<()> {
 		Commands::Config { action } => cmd_config(&port, action),
 		Commands::Upload {
 			images,
-			crop,
+			no_crop,
 			preview,
-		} => cmd_upload(&port, &images, crop, preview.as_deref()),
-		Commands::Slideshow { dir, crop } => cmd_slideshow(&port, &dir, crop),
+		} => cmd_upload(&port, &images, !no_crop, preview.as_deref()),
+		Commands::Slideshow { dir, no_crop } => cmd_slideshow(&port, &dir, !no_crop),
 		Commands::Power { watch } => cmd_power(&port, watch),
 		Commands::Monitor => cmd_monitor(&port),
 		Commands::Read { output } => cmd_read(&port, &output),
@@ -48,8 +48,8 @@ fn main() -> Result<()> {
 		Commands::Rotate {
 			dir,
 			interval,
-			crop,
-		} => cmd_rotate(&port, &dir, interval, crop),
+			no_crop,
+		} => cmd_rotate(&port, &dir, interval, !no_crop),
 	}
 }
 
