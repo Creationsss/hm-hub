@@ -13,14 +13,12 @@ CLI tool for the HM Lab Z-NEO 8K USB Hub. Controls the built-in 320x170 LCD scre
 
 ## Install
 
+Download a prebuilt binary from [releases](https://heliopolis.live/creations/hm-hub/-/releases).
+
+Or build from source:
+
 ```
 cargo install --path .
-```
-
-Or build manually:
-
-```
-cargo build --release
 ```
 
 ## Usage
